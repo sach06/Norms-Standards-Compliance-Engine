@@ -43,3 +43,22 @@ export interface ValidationResult {
 export interface ComplianceFinding extends NormMention {
   validation: ValidationResult;
 }
+
+export interface CustomerProfile {
+  customerName: string | null;
+  city: string | null;
+  country: string | null;
+  equipmentType: string | null;
+  documentDate: string | null;
+  projectCode: string | null;
+}
+
+export interface ApplicableStandard {
+  code: string;
+  title: string;
+  sourceType: "internal-db" | "internet";
+  sourceUrl: string | null;
+  relevanceReason: string;
+  documentPage: number | null;
+  matchedFindingId: string | null;
+}

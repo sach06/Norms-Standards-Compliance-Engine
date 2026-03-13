@@ -6,6 +6,11 @@
 
 :root {
   color-scheme: light;
+  --sms-blue: #003a70;
+  --sms-red: #d71920;
+  --sms-black: #111111;
+  --sms-white: #ffffff;
+  --sms-blue-soft: #e9f1fb;
 }
 
 * {

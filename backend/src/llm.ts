@@ -1,7 +1,16 @@
 import { AzureOpenAI } from "openai";
 import { DomainCategory, NormMention } from "./types";
 
-const BASE_REGEX = /(ISO|DIN|ANSI|IEC|EN|ASTM)\s*[A-Z0-9][A-Z0-9\-:.\/]+/gi;
+const BASE_REGEX = /\b(?:ISO|DIN|ANSI|IEC|EN|ASTM|BS|ASME|API|NFPA|IEEE)\b(?:\s|[-:\/])*[A-Z0-9\-:.\/]*\d[A-Z0-9\-:.\/]*/gi;
+const VALID_NORM_CODE = /^(?:ISO|DIN|ANSI|IEC|EN|ASTM|BS|ASME|API|NFPA|IEEE)\b[\sA-Z0-9\-:.\/]*\d[\sA-Z0-9\-:.\/]*$/i;
+
+function normalizeNormCode(code: string): string {
+  return code.replace(/\s+/g, " ").trim();
+}
+
+function isValidNormCode(code: string): boolean {
+  return VALID_NORM_CODE.test(normalizeNormCode(code));
+}
 
 function classifyByContext(context: string): DomainCategory {
   const lowered = context.toLowerCase();
@@ -26,11 +35,15 @@ function extractWithRegex(text: string): NormMention[] {
   let match: RegExpExecArray | null;
 
   while ((match = BASE_REGEX.exec(text)) !== null) {
-    const code = match[0].trim().replace(/\s{2,}/g, " ");
+    const code = normalizeNormCode(match[0]);
     const start = match.index;
     const end = match.index + code.length;
     const context = text.slice(Math.max(0, start - 120), Math.min(text.length, end + 120));
     const versionMatch = code.match(/(19|20)\d{2}/);
+
+    if (!isValidNormCode(code)) {
+      continue;
+    }
 
     mentions.push({
       id: `${code}-${start}`,
@@ -85,8 +98,8 @@ async function extractWithAzureOpenAI(text: string): Promise<Array<Pick<NormMent
     messages: [
       {
         role: "system",
-        content:
-          "Extract technical standards mentions (ISO/DIN/ANSI/IEC/EN/ASTM) and classify each as Electrical, Mechanical, Engineering, Quality, or Safety. Return strict JSON: {\"mentions\":[{\"code\":string,\"category\":string}]}."
+          content:
+            "Extract technical standards mentions (ISO/DIN/ANSI/IEC/EN/ASTM/BS/ASME/API/NFPA/IEEE) and classify each as Electrical, Mechanical, Engineering, Quality, or Safety. Return strict JSON: {\"mentions\":[{\"code\":string,\"category\":string}]}."
       },
       {
         role: "user",
@@ -105,7 +118,7 @@ async function extractWithAzureOpenAI(text: string): Promise<Array<Pick<NormMent
 }
 
 export async function detectNormMentions(text: string): Promise<NormMention[]> {
-  const regexMentions = extractWithRegex(text);
+  const regexMentions = extractWithRegex(text).filter((mention) => isValidNormCode(mention.code));
 
   try {
     const llmMentions = await extractWithAzureOpenAI(text);
@@ -116,20 +129,25 @@ export async function detectNormMentions(text: string): Promise<NormMention[]> {
     const enriched = [...regexMentions];
 
     for (const item of llmMentions) {
-      const hit = regexMentions.find((mention) => mention.code.toLowerCase() === item.code.toLowerCase());
+      const normalizedCode = normalizeNormCode(item.code);
+      if (!isValidNormCode(normalizedCode)) {
+        continue;
+      }
+
+      const hit = regexMentions.find((mention) => mention.code.toLowerCase() === normalizedCode.toLowerCase());
       if (hit) {
         hit.category = item.category;
       } else {
-        const idx = text.toLowerCase().indexOf(item.code.toLowerCase());
+        const idx = text.toLowerCase().indexOf(normalizedCode.toLowerCase());
         if (idx >= 0) {
           enriched.push({
-            id: `${item.code}-${idx}`,
-            code: item.code,
-            version: item.code.match(/(19|20)\d{2}/)?.[0] ?? null,
+            id: `${normalizedCode}-${idx}`,
+            code: normalizedCode,
+            version: normalizedCode.match(/(19|20)\d{2}/)?.[0] ?? null,
             category: item.category,
             start: idx,
-            end: idx + item.code.length,
-            context: text.slice(Math.max(0, idx - 120), Math.min(text.length, idx + item.code.length + 120))
+            end: idx + normalizedCode.length,
+            context: text.slice(Math.max(0, idx - 120), Math.min(text.length, idx + normalizedCode.length + 120))
           });
         }
       }

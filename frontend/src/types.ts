@@ -43,6 +43,30 @@ export interface AnalysisResponse {
     spans: TextSpan[];
   };
   findings: Finding[];
+  customerProfile?: {
+    customerName: string | null;
+    city: string | null;
+    country: string | null;
+    equipmentType: string | null;
+    documentDate: string | null;
+    projectCode: string | null;
+  };
+  applicableStandards?: Array<{
+    code: string;
+    title: string;
+    sourceType: "internal-db" | "internet";
+    sourceUrl: string | null;
+    relevanceReason: string;
+    documentPage: number | null;
+    matchedFindingId: string | null;
+  }>;
+  referenceProfile?: {
+    sourceFileName: string;
+    trainedAt: string;
+    normCodes: string[];
+    keywords: string[];
+    comments: string[];
+  } | null;
 }
 
 export interface StandardLibraryItem {
@@ -51,4 +75,20 @@ export interface StandardLibraryItem {
   source_url: string | null;
   suggested_replacement: string | null;
   updated_at: string;
+}
+
+export interface ReferenceTrainingResult {
+  ok: boolean;
+  profile: {
+    sourceFileName: string;
+    trainedAt: string;
+    normCodes: string[];
+    keywords: string[];
+    comments: string[];
+  };
+  summary: {
+    normsLearned: number;
+    keywordsLearned: number;
+    commentsLearned: number;
+  };
 }

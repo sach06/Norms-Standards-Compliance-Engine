@@ -3,7 +3,27 @@ import path from "path";
 import { ComplianceFinding, ExtractedDocument } from "./types";
 
 const dbPath = path.resolve(process.cwd(), "compliance.duckdb");
-const db = new duckdb.Database(dbPath);
+let db = new duckdb.Database(":memory:");
+
+async function connectDatabase(): Promise<void> {
+  const open = (target: string) =>
+    new Promise<duckdb.Database>((resolve, reject) => {
+      const instance = new duckdb.Database(target, (err: Error | null) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(instance);
+      });
+    });
+
+  try {
+    db = await open(dbPath);
+  } catch {
+    // Fallback keeps the app alive if file locks (OneDrive/sync) block local DB access.
+    db = await open(":memory:");
+  }
+}
 
 function run(sql: string, params: unknown[] = []): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -30,6 +50,8 @@ function all<T>(sql: string, params: unknown[] = []): Promise<T[]> {
 }
 
 export async function initDb(): Promise<void> {
+  await connectDatabase();
+
   await run(`
     CREATE TABLE IF NOT EXISTS documents (
       id VARCHAR PRIMARY KEY,

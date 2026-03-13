@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/store.ts","./src/types.ts","./src/components/compliancesidebar.tsx","./src/components/documentview.tsx","./src/components/standardslibrary.tsx","./src/components/uploader.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/store.ts","./src/types.ts","./src/components/compliancesidebar.tsx","./src/components/documentview.tsx","./src/components/pdfcomplianceviewer.tsx","./src/components/standardslibrary.tsx","./src/components/uploader.tsx"],"version":"5.9.3"}
