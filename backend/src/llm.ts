@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { AzureOpenAI } from "openai";
 import { DomainCategory, NormMention } from "./types";
 
 const BASE_REGEX = /(ISO|DIN|ANSI|IEC|EN|ASTM)\s*[A-Z0-9][A-Z0-9\-:.\/]+/gi;
@@ -65,18 +65,17 @@ function dedupeMentions(items: NormMention[]): NormMention[] {
 async function extractWithAzureOpenAI(text: string): Promise<Array<Pick<NormMention, "code" | "category">>> {
   const apiKey = process.env.AZURE_OPENAI_API_KEY;
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
-  const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2024-10-21";
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT || process.env.AZURE_OPENAI_MODEL;
+  const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2025-01-01-preview";
 
   if (!apiKey || !endpoint || !deployment) {
     return [];
   }
 
-  const client = new OpenAI({
+  const client = new AzureOpenAI({
     apiKey,
-    baseURL: `${endpoint}/openai/deployments/${deployment}`,
-    defaultQuery: { "api-version": apiVersion },
-    defaultHeaders: { "api-key": apiKey }
+    endpoint,
+    apiVersion
   });
 
   const completion = await client.chat.completions.create({
