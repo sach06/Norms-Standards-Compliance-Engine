@@ -1,0 +1,10 @@
+node_modules/
+**/node_modules/
+frontend/dist/
+backend/dist/
+backend/compliance.duckdb
+backend/compliance.duckdb.wal
+.env
+backend/.env
+.DS_Store
+Thumbs.db
